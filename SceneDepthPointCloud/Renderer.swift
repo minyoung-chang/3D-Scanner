@@ -9,8 +9,10 @@ import Metal
 import MetalKit
 import ARKit
 import UIKit
+import Photos
 
 final class Renderer {
+    private let sensorController = SensorController()
     var isSavingFile = false
     
     // Maximum number of points we store in the point cloud
@@ -104,6 +106,8 @@ final class Renderer {
     }
     
     init(session: ARSession, metalDevice device: MTLDevice, renderDestination: RenderDestinationProvider) {
+        self.sensorController.startMotionSensor()
+        
         self.session = session
         self.device = device
         self.renderDestination = renderDestination
@@ -160,6 +164,8 @@ final class Renderer {
     
     private func update(frame: ARFrame) {
         // frame dependent info
+        self.sensorController.collectData()
+        
         let camera = frame.camera
         let cameraIntrinsicsInversed = camera.intrinsics.inverse
         let viewMatrix = camera.viewMatrix(for: orientation)
@@ -408,5 +414,12 @@ private extension Renderer {
         }
         
         return fileToWrite
+    }
+    
+    public func saveSensorData() -> String {
+        // Combine CSV String
+        let csvString = sensorController.createCSV(from: self.sensorController.collectedData)
+        
+        return csvString
     }
 }

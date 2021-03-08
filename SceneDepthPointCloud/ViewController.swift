@@ -11,6 +11,7 @@ import MetalKit
 import ARKit
 
 final class ViewController: UIViewController, ARSessionDelegate {
+    
     private let isUIEnabled = true
     private let confidenceControl = UISegmentedControl(items: ["Low", "Medium", "High"])
     private let rgbRadiusSlider = UISlider()
@@ -20,9 +21,11 @@ final class ViewController: UIViewController, ARSessionDelegate {
     
     @IBAction func saveCollectedData(_ sender: UIButton) {
         print("touched")
-        let plyString = self.renderer.savePointsToFile()
         
-        let activityViewController = UIActivityViewController(activityItems: [plyString], applicationActivities: nil)
+        let plyString = self.renderer.savePointsToFile()
+        let sensorRecord = self.renderer.saveSensorData()
+        
+        let activityViewController = UIActivityViewController(activityItems: [plyString, sensorRecord], applicationActivities: nil)
         present(activityViewController, animated: true, completion: nil)
     }
     
@@ -128,6 +131,7 @@ final class ViewController: UIViewController, ARSessionDelegate {
     }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
+                
         // Present an error message to the user.
         guard error is ARError else { return }
         let errorWithInfo = error as NSError
