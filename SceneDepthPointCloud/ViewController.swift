@@ -32,18 +32,6 @@ final class ViewController: UIViewController, ARSessionDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        // Setup a save button
-//        let button = UIButton(type: .system, primaryAction: UIAction(title: "Save", handler: { (action) in
-//            self.renderer.savePointsToFile()
-//        }))
-//        button.translatesAutoresizingMaskIntoConstraints = false
-//        self.view.addSubview(button)
-//        NSLayoutConstraint.activate([
-//            button.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-//            button.centerYAnchor.constraint(equalTo: self.view.centerYAnchor)
-//        ])
-        
-        
         guard let device = MTLCreateSystemDefaultDevice() else {
             print("Metal is not supported on this device")
             return

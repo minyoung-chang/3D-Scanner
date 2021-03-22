@@ -11,8 +11,25 @@ import ARKit
 import UIKit
 import Photos
 
+import CoreMotion
+
+class currentReading {
+    var time: Date = Date.distantPast
+    var x: Float = 0.0
+    var y: Float = 0.0
+    var z: Float = 0.0
+    var roll: Float = 0.0
+    var pitch: Float = 0.0
+    var yaw: Float = 0.0
+    var projectionMatrix: simd_float4x4 = matrix_identity_float4x4
+}
+
 final class Renderer {
+    
     private let sensorController = SensorController()
+    
+    // To store orientation and translation per time
+    private var collectedData: Array<currentReading> =  Array()
     var isSavingFile = false
     
     // Maximum number of points we store in the point cloud
@@ -163,17 +180,40 @@ final class Renderer {
     }
     
     private func update(frame: ARFrame) {
-        // frame dependent info
+        
         self.sensorController.collectData()
         
         let camera = frame.camera
         let cameraIntrinsicsInversed = camera.intrinsics.inverse
         let viewMatrix = camera.viewMatrix(for: orientation)
         let viewMatrixInversed = viewMatrix.inverse
+        
+        let x = viewMatrix.columns.3[0]
+        let y = viewMatrix.columns.3[1]
+        let z = viewMatrix.columns.3[2]
+        
+        let roll = camera.eulerAngles.x
+        let pitch = camera.eulerAngles.y
+        let yaw = camera.eulerAngles.z
+        
+        /// original
         let projectionMatrix = camera.projectionMatrix(for: orientation, viewportSize: viewportSize, zNear: 0.001, zFar: 0)
+        
+        let data = currentReading()
+        data.time = sensorController.time!
+        data.x = x
+        data.y = y
+        data.z = z
+        data.roll = roll
+        data.pitch = pitch
+        data.yaw = yaw
+        data.projectionMatrix = projectionMatrix
+        self.collectedData.append(data)
+        
         pointCloudUniforms.viewProjectionMatrix = projectionMatrix * viewMatrix
         pointCloudUniforms.localToWorld = viewMatrixInversed * rotateToARCamera
         pointCloudUniforms.cameraIntrinsicsInversed = cameraIntrinsicsInversed
+        
     }
     
     func draw() {
@@ -416,10 +456,86 @@ private extension Renderer {
         return fileToWrite
     }
     
-    public func saveSensorData() -> String {
-        // Combine CSV String
-        let csvString = sensorController.createCSV(from: self.sensorController.collectedData)
+    public func saveMatrix() -> String {
+        var fileToWrite = ""
+        let headers = ["time", "roll", "pitch", "yaw", "x", "y", "z"]
+        for header in headers {
+            fileToWrite += header
+            fileToWrite += " "
+        }
+        fileToWrite += "\n"
         
-        return csvString
+        // 2
+        for i in 0..<collectedData.count {
+        
+            // 3
+            let data = collectedData[i]
+            
+            // 5
+            let value = "\(data.time) \(data.roll) \(data.pitch) \(data.yaw) \(data.x) \(data.y) \(data.z)"
+            fileToWrite += value
+            let col0 = data.projectionMatrix.columns.0
+            let col0_str = "\(col0[0]),\(col0[1]),\(col0[2]),\(col0[3]),"
+            let col1 = data.projectionMatrix.columns.1
+            let col1_str = "\(col1[0]),\(col1[1]),\(col1[2]),\(col1[3]),"
+            let col2 = data.projectionMatrix.columns.2
+            let col2_str = "\(col2[0]),\(col2[1]),\(col2[2]),\(col2[3]),"
+            let col3 = data.projectionMatrix.columns.3
+            let col3_str = "\(col3[0]),\(col3[1]),\(col3[2]),\(col3[3])"        // no "," at the end for the last column
+            fileToWrite += col0_str
+            fileToWrite += col1_str
+            fileToWrite += col2_str
+            fileToWrite += col3_str
+            fileToWrite += "\r\n"
+        }
+        
+        return fileToWrite
     }
+    
+    
+    public func saveSensorData() -> String {
+        var fileToWrite = ""
+        let headers = ["time", "roll", "pitch", "yaw", "x", "y", "z"]
+        for header in headers {
+            fileToWrite += header
+            fileToWrite += " "
+        }
+        fileToWrite += "\n"
+        
+        // 2
+        for i in 0..<collectedData.count {
+        
+            // 3
+            let data = collectedData[i]
+            
+            // 5
+            let pvValue = "\(data.time) \(data.roll) \(data.pitch) \(data.yaw) \(data.x) \(data.y) \(data.z) "
+            fileToWrite += pvValue
+            
+            let col0 = data.projectionMatrix.columns.0
+            let col0_str = "\(col0[0]),\(col0[1]),\(col0[2]),\(col0[3]),"
+            let col1 = data.projectionMatrix.columns.1
+            let col1_str = "\(col1[0]),\(col1[1]),\(col1[2]),\(col1[3]),"
+            let col2 = data.projectionMatrix.columns.2
+            let col2_str = "\(col2[0]),\(col2[1]),\(col2[2]),\(col2[3]),"
+            let col3 = data.projectionMatrix.columns.3
+            let col3_str = "\(col3[0]),\(col3[1]),\(col3[2]),\(col3[3])"        // no "," at the end for the last column
+            fileToWrite += col0_str
+            fileToWrite += col1_str
+            fileToWrite += col2_str
+            fileToWrite += col3_str
+            
+            fileToWrite += "\r\n"
+        }
+        
+        return fileToWrite
+    }
+    
+    
+//    public func saveSensorData() -> String {
+//        // Combine CSV String
+//        let csvString = sensorController.createCSV(from: self.sensorController.collectedData)
+//
+//        return csvString
+//    }
 }
