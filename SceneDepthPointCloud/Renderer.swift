@@ -188,9 +188,9 @@ final class Renderer {
         let viewMatrix = camera.viewMatrix(for: orientation)
         let viewMatrixInversed = viewMatrix.inverse
         
-        let x = viewMatrix.columns.3[0]
-        let y = viewMatrix.columns.3[1]
-        let z = viewMatrix.columns.3[2]
+        let x = camera.transform.columns.3[0]
+        let y = camera.transform.columns.3[1]
+        let z = camera.transform.columns.3[2]
         
         let roll = camera.eulerAngles.x
         let pitch = camera.eulerAngles.y
@@ -198,7 +198,11 @@ final class Renderer {
         
         /// original
         let projectionMatrix = camera.projectionMatrix(for: orientation, viewportSize: viewportSize, zNear: 0.001, zFar: 0)
+        pointCloudUniforms.viewProjectionMatrix = projectionMatrix * viewMatrix
+        pointCloudUniforms.localToWorld = viewMatrixInversed * rotateToARCamera
+        pointCloudUniforms.cameraIntrinsicsInversed = cameraIntrinsicsInversed
         
+        // update
         let data = currentReading()
         data.time = sensorController.time!
         data.x = x
@@ -207,12 +211,9 @@ final class Renderer {
         data.roll = roll
         data.pitch = pitch
         data.yaw = yaw
-        data.projectionMatrix = projectionMatrix
+//        data.projectionMatrix = camera.projectionMatrix
+        data.projectionMatrix = pointCloudUniforms.viewProjectionMatrix
         self.collectedData.append(data)
-        
-        pointCloudUniforms.viewProjectionMatrix = projectionMatrix * viewMatrix
-        pointCloudUniforms.localToWorld = viewMatrixInversed * rotateToARCamera
-        pointCloudUniforms.cameraIntrinsicsInversed = cameraIntrinsicsInversed
         
     }
     
